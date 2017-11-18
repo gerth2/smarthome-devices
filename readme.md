@@ -37,3 +37,9 @@ I have no idea where this system will evolve to in the future. The things I do k
 # Copyright/License/Stuff
 
 Thanks to all the folks who've contributed software already that I was able to use to get this up and going. I've attempted to capture all your copyright notices in copyrights.txt. Let me know if I missed anyone. Thank you all so much! If we ever meet in person, I will buy you a beer.
+
+Here's a quick list of the resources I've found useful online so far:
+
+  * [WEMOS Arduino DHT library](https://github.com/wemos/WEMOS_DHT12_Arduino_Library)
+  * [James Lewis's MQTT on ESP8266 tutorial](https://www.baldengineer.com/mqtt-tutorial.html)
+  * [WEMOS Arduino setup](https://wiki.wemos.cc/tutorials:get_started:get_started_in_arduino)
