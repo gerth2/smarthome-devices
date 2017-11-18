@@ -5,18 +5,18 @@ This is some of the code for the custom smarthome devices I've been working on f
 # Current 
 
 ## Alpha 
-Alpha is the upstairs ESP8266-based thermometer. It provides a simple web interface for debugging, and hooks to the MTTQ server for display in HomeAssistant.
+Alpha is the upstairs ESP8266-based thermometer. It provides a simple web interface for debugging, and hooks to the MQTT server for display in HomeAssistant.
 
 # Future/Planned 
 
 ## Beta
-Alpha is the main-floor ESP8266-based thermometer. It provides a simple web interface for debugging, and hooks to the MTTQ server for display in HomeAssistant.
+Alpha is the main-floor ESP8266-based thermometer. It provides a simple web interface for debugging, and hooks to the MQTT server for display in HomeAssistant.
 
 ## Gamma 
-Alpha is the downstairs ESP8266-based thermometer. It provides a simple web interface for debugging, and hooks to the MTTQ server for display in HomeAssistant.
+Alpha is the downstairs ESP8266-based thermometer. It provides a simple web interface for debugging, and hooks to the MQTT server for display in HomeAssistant.
 
 ## TBD 1
-An ESP8266 with two accelerometers attached. The accelerometers are affixed to my washer and dryer, and detect vibration.  Based on the vibration pattern, they report a state to the MTTQ server, which HomeAssistant can use to trigger actions (like sending me a text message).
+An ESP8266 with two accelerometers attached. The accelerometers are affixed to my washer and dryer, and detect vibration.  Based on the vibration pattern, they report a state to the MQTT server, which HomeAssistant can use to trigger actions (like sending me a text message).
 
 ## TBD 2
 An ESP8266 connected to two split-core current sensors, placed around the Mains input to the house. At a minimum, track current/power usage in the house. More advanced usage might be identifying different power-consumption signatures.... to be seen...

@@ -24,10 +24,10 @@ ESP8266WebServer WebServer ( 80 );
 const char *ssid = HOME_WIFI_SSID;
 const char *password = HOME_WIFI_PASS;
 
-/* MTTQ */
-IPAddress MTTQ_server(HA_SUBNET0, HA_SUBNET1, HA_SUBNET2, MTTQ_SERVER);
+/* MQTT */
+IPAddress MQTT_server(HA_SUBNET0, HA_SUBNET1, HA_SUBNET2, MQTT_SERVER);
 WiFiClient wclient;
-PubSubClient MTTQ_client(wclient, MTTQ_server);
+PubSubClient MQTT_client(wclient, MQTT_server);
 
 /* DHT Temp/Humidity sensor */
 DHT12 DHT_sensor;
@@ -52,8 +52,8 @@ unsigned long Webserver_task_prev_run_time_ms;
 #define SENSOR_SAMPLE_TASK_RATE_MS 5000
 unsigned long Sensor_sample_task_prev_run_time_ms;
 
-#define MTTQ_TASK_RATE_MS 5000
-unsigned long MTTQ_task_prev_run_time_ms;
+#define MQTT_TASK_RATE_MS 5000
+unsigned long MQTT_task_prev_run_time_ms;
 
 
 
@@ -68,7 +68,7 @@ void printWebpageServed(void){
 
 
 /****************************************************************************************/
-/**** MTTQ Functions                                                                    */                            
+/**** MQTT Functions                                                                    */                            
 /****************************************************************************************/
 
 
@@ -191,23 +191,23 @@ void WebServerTaskUpdate(void){
 
 }
 
-void MTTQTaskUpdate(void){
+void MQTTTaskUpdate(void){
 
   char tempStr[10] = {0};
   char humidStr[10] = {0};
 
   if (WiFi.status() == WL_CONNECTED) {
 
-    if (!MTTQ_client.connected()) {
-      if (MTTQ_client.connect("ALPHA")) {
-        Serial.println("MTTQ Connected");
+    if (!MQTT_client.connected()) {
+      if (MQTT_client.connect("ALPHA")) {
+        Serial.println("MQTT Connected");
       } 
     }
 
-    if (MTTQ_client.connected()){
-      MTTQ_client.publish("ALPHA/Temp_F",dtostrf(Temp_degF, 3, 2, tempStr));
-      MTTQ_client.publish("ALPHA/Humidity_Pct",dtostrf(Humidity_pct, 3, 2, humidStr));
-      MTTQ_client.loop();
+    if (MQTT_client.connected()){
+      MQTT_client.publish("ALPHA/Temp_F",dtostrf(Temp_degF, 3, 2, tempStr));
+      MQTT_client.publish("ALPHA/Humidity_Pct",dtostrf(Humidity_pct, 3, 2, humidStr));
+      MQTT_client.loop();
     }
 
   }
@@ -290,10 +290,10 @@ void loop ( void ) {
     Webserver_task_prev_run_time_ms = Loop_start_time_ms;
   }
 
-  if(MTTQ_task_prev_run_time_ms + MTTQ_TASK_RATE_MS < Loop_start_time_ms){
+  if(MQTT_task_prev_run_time_ms + MQTT_TASK_RATE_MS < Loop_start_time_ms){
     /* Time to run the webserver sample task */
-    MTTQTaskUpdate();
-    MTTQ_task_prev_run_time_ms = Loop_start_time_ms;
+    MQTTTaskUpdate();
+    MQTT_task_prev_run_time_ms = Loop_start_time_ms;
   }
 
 
