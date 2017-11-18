@@ -13,26 +13,29 @@
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include "WEMOS_DHT12.h"
+#include "PubSubClient.h"
 
 /* Set wifi creds from private file */
 /*Swap this with your own file to define your home wifi creds */
-#include "B:\Projects\wifi_creds\gerth_wifi.h" 
-const char *ssid = HOME_WIFI_SSID;
-const char *password = HOME_WIFI_PASS;
+#include "B:\Projects\wifi_defs\gerth_wifi.h" 
 
 /* Web Server */
 ESP8266WebServer WebServer ( 80 );
+const char *ssid = HOME_WIFI_SSID;
+const char *password = HOME_WIFI_PASS;
 
 /* MTTQ */
+IPAddress MTTQ_server(HA_SUBNET0, HA_SUBNET1, HA_SUBNET2, MTTQ_SERVER);
+WiFiClient wclient;
+PubSubClient MTTQ_client(wclient, MTTQ_server);
 
 /* DHT Temp/Humidity sensor */
 DHT12 DHT_sensor;
-float Temp_degF_raw;
 float Temp_degF;
-float Humidity_pct_raw;
 float Humidity_pct;
 const float Temp_offset_degF = -6.0f;
 const float Humidity_offset_pct = 0.0f;
+boolean sensor_faulted = false;
 
 /* IO Constants */
 #define LED_PIN  LED_BUILTIN 
@@ -46,8 +49,11 @@ unsigned long Prev_loop_start_time_ms;
 #define WEBSERVER_TASK_RATE_MS 1000
 unsigned long Webserver_task_prev_run_time_ms;
 
-#define SENSOR_SAMPLE_TASK_RATE_MS 500
+#define SENSOR_SAMPLE_TASK_RATE_MS 5000
 unsigned long Sensor_sample_task_prev_run_time_ms;
+
+#define MTTQ_TASK_RATE_MS 5000
+unsigned long MTTQ_task_prev_run_time_ms;
 
 
 
@@ -61,6 +67,11 @@ void printWebpageServed(void){
 }
 
 
+/****************************************************************************************/
+/**** MTTQ Functions                                                                    */                            
+/****************************************************************************************/
+
+
 
 /****************************************************************************************/
 /**** HTTP Request (Webpage) Handling functions                                         */                            
@@ -71,10 +82,11 @@ void printWebpageServed(void){
  */
 void handleRoot() {
   char temp[600];
+  char tempStr[10] = {0};
+  char humidStr[10] = {0};
   int sec = millis() / 1000;
   int min = sec / 60;
   int hr = min / 60;
-
   snprintf ( temp, 600,
 
 "<html>\
@@ -88,19 +100,18 @@ void handleRoot() {
   <body>\
     <h1>ALPHA Node</h1>\
     <p>Uptime: %02d:%02d:%02d</p>\
-    <p>Temperature: %d.%02d Deg F</p>\
-    <p>Humidity: %d.%02d %%</p>\
-    <img src=\"/test.svg\" />\
+    <p>Sensor Status: %s</p>\
+    <p>Temperature: %s Deg F</p>\
+    <p>Humidity: %s %%</p>\
   </body>\
 </html>",
 
     hr, 
     min % 60, 
     sec % 60,
-    (int)(Temp_degF_raw), /*yucky way to have to format a float.*/
-    (int)((Temp_degF_raw - floorf(Temp_degF_raw))*100.0),
-    (int)(Humidity_pct_raw),
-    (int)((Humidity_pct_raw - floorf(Humidity_pct_raw))*100.0)
+    (sensor_faulted ? "FAULTED" : "OK" ),
+    dtostrf(Temp_degF, 3, 2, tempStr),
+    dtostrf(Humidity_pct, 3, 2, humidStr)
   );
 
   printWebpageServed();
@@ -157,29 +168,50 @@ void handleNotFound() {
 void SensorSampleTaskUpdate(void){
   digitalWrite ( LED_PIN, LED_ON );
 
-  Serial.println ( "Running sensor sample task" );
   byte ret_val = DHT_sensor.get();
   if( ret_val != 0 ) {
     Serial.print( "Error, could not read from sensor. Get() returned value " );
     Serial.println(ret_val);
+    sensor_faulted = true;
   }
   else {
-    Temp_degF_raw = DHT_sensor.fTemp;
-    Humidity_pct_raw= DHT_sensor.humidity;
-    Serial.print("Raw Sensor Values: ");
-    Serial.print(Temp_degF_raw);
-    Serial.print("degF Temp");
-    Serial.print(Humidity_pct_raw);
-    Serial.print("% Humidity");
-    Serial.println("");
+    Temp_degF = DHT_sensor.fTemp + Temp_offset_degF;
+    Humidity_pct= DHT_sensor.humidity + Humidity_offset_pct;
+    sensor_faulted = false;
   }
 
   digitalWrite ( LED_PIN, LED_OFF );
 }
 
 void WebServerTaskUpdate(void){
-  Serial.println ( "Running Webserver update task" );
-  WebServer.handleClient();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    WebServer.handleClient();
+  }
+
+}
+
+void MTTQTaskUpdate(void){
+
+  char tempStr[10] = {0};
+  char humidStr[10] = {0};
+
+  if (WiFi.status() == WL_CONNECTED) {
+
+    if (!MTTQ_client.connected()) {
+      if (MTTQ_client.connect("ALPHA")) {
+        Serial.println("MTTQ Connected");
+      } 
+    }
+
+    if (MTTQ_client.connected()){
+      MTTQ_client.publish("ALPHA/Temp_F",dtostrf(Temp_degF, 3, 2, tempStr));
+      MTTQ_client.publish("ALPHA/Humidity_Pct",dtostrf(Humidity_pct, 3, 2, humidStr));
+      MTTQ_client.loop();
+    }
+
+  }
+
 }
 
 /****************************************************************************************/
@@ -195,7 +227,7 @@ void setup ( void ) {
 
 
   WiFi.begin ( ssid, password );
-  Serial.println ( "Wifi hardware started, attempting to connect to AP" );
+  Serial.println ( "Wifi hardware started, attempting to connect to AP..." );
 
   // Wait for connection
   while ( WiFi.status() != WL_CONNECTED ) {
@@ -211,13 +243,13 @@ void setup ( void ) {
 
   Serial.println ( "Configuring WebServer..." );
   WebServer.on ( "/", handleRoot );
-  WebServer.on ( "/test.svg", drawGraph );
   WebServer.onNotFound ( handleNotFound );
   WebServer.begin();
   Serial.println ( "HTTP WebServer started" );
 
   DHT_sensor.init();
   Serial.println ( "Sensor init'ed" );
+
 
   Serial.println ( "Init complete!" );
   digitalWrite ( LED_PIN, LED_OFF );
@@ -256,6 +288,12 @@ void loop ( void ) {
     /* Time to run the webserver sample task */
     WebServerTaskUpdate();
     Webserver_task_prev_run_time_ms = Loop_start_time_ms;
+  }
+
+  if(MTTQ_task_prev_run_time_ms + MTTQ_TASK_RATE_MS < Loop_start_time_ms){
+    /* Time to run the webserver sample task */
+    MTTQTaskUpdate();
+    MTTQ_task_prev_run_time_ms = Loop_start_time_ms;
   }
 
 
