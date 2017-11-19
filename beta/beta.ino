@@ -24,7 +24,7 @@
 ESP8266WebServer WebServer ( 80 );
 const char *ssid = HOME_WIFI_SSID;
 const char *password = HOME_WIFI_PASS;
-IPAddress LocalIP(HA_SUBNET0, HA_SUBNET1, HA_SUBNET2,ALPHA_NODE);
+IPAddress LocalIP(HA_SUBNET0, HA_SUBNET1, HA_SUBNET2,BETA_NODE);
 IPAddress GatewayIP(HA_SUBNET0, HA_SUBNET1, HA_SUBNET2,HA_ROUTER);
 IPAddress SubnetMask(255, 255, 255, 0);
 
@@ -39,8 +39,8 @@ float Temp_degF_raw;
 float Humidity_pct_raw;
 float Temp_degF;
 float Humidity_pct;
-const float Temp_offset_degF = -2.5f; /* Tuned to align with a measured sensor */
-const float Humidity_offset_pct = 0.0f; /* Assumed Correct */
+const float Temp_offset_degF = -3.2f; /* Tuned to align with ALPHA */
+const float Humidity_offset_pct = 0.0f; /* Tuned to align with ALPHA */
 boolean sensor_faulted = false;
 FilterData Temp_filter;
 FilterData Humidity_filter;
@@ -102,13 +102,13 @@ void handleRoot() {
 "<html>\
   <head>\
     <meta http-equiv='refresh' content='5'/>\
-    <title>ALPHA Node</title>\
+    <title>BETA Node</title>\
     <style>\
       body { background-color: #cccccc; font-family: Arial, Helvetica, Sans-Serif; Color: #000088; }\
     </style>\
   </head>\
   <body>\
-    <h1>ALPHA Node</h1>\
+    <h1>BETA Node</h1>\
     <p>Uptime: %02d:%02d:%02d</p>\
     <p>Sensor Status: %s</p>\
     <p>Temperature: %s Deg F</p>\
@@ -228,14 +228,14 @@ void MQTTTaskUpdate(void){
   if (WiFi.status() == WL_CONNECTED) {
 
     if (!MQTT_client.connected()) {
-      if (MQTT_client.connect("ALPHA")) {
+      if (MQTT_client.connect("BETA")) {
         Serial.println("MQTT Connected");
       } 
     }
 
     if (MQTT_client.connected()){
-      MQTT_client.publish("ALPHA/Temp_F",dtostrf(Temp_degF, 3, 2, tempStr));
-      MQTT_client.publish("ALPHA/Humidity_Pct",dtostrf(Humidity_pct, 3, 2, humidStr));
+      MQTT_client.publish("BETA/Temp_F",dtostrf(Temp_degF, 3, 2, tempStr));
+      MQTT_client.publish("BETA/Humidity_Pct",dtostrf(Humidity_pct, 3, 2, humidStr));
       MQTT_client.loop();
     }
 
