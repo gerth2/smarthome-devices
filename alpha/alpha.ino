@@ -261,6 +261,7 @@ void setup ( void ) {
   /* Connect to the home automation wifi network with fixed IP */
   WiFi.begin ( ssid, password );
   WiFi.config(LocalIP, GatewayIP, SubnetMask);
+  WiFi.softAPdisconnect(true); //Disable the node as an access point
   Serial.println ( "Wifi hardware started, attempting to connect to AP..." );
 
   /* Wait for connection */
