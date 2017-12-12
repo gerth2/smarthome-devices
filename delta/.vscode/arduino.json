@@ -1,7 +1,7 @@
 {
     "board": "esp8266:esp8266:d1_mini",
     "configuration": "CpuFrequency=80,UploadSpeed=921600,FlashSize=4M3M",
-    "port": "COM11",
-    "sketch": "alpha.ino",
+    "port": "COM5",
+    "sketch": "delta.ino",
     "output": "tmp_build"
 }
